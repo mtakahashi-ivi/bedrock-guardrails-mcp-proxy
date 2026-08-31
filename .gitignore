@@ -1,0 +1,26 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl.backup
+tfplan
+
+# Node
+node_modules/
+dist/
+*.log
+
+# macOS
+.DS_Store
+
+# Env
+.env
+.env.*
