@@ -34,3 +34,20 @@ resource "aws_bedrock_guardrail_version" "pii_masking" {
   guardrail_arn = aws_bedrock_guardrail.pii_masking.guardrail_arn
   description   = "初版"
 }
+
+# プロキシ利用者に配る最小権限ポリシー。モデル呼び出し権限は含めない。
+# IAM Identity Center の Permission Set やグループへの割り当ては環境依存のため、
+# ここではポリシー定義のみを管理する。
+data "aws_iam_policy_document" "apply_guardrail" {
+  statement {
+    sid       = "ApplyGuardrailOnly"
+    actions   = ["bedrock:ApplyGuardrail"]
+    resources = [aws_bedrock_guardrail.pii_masking.guardrail_arn]
+  }
+}
+
+resource "aws_iam_policy" "apply_guardrail" {
+  name        = "${var.guardrail_name}-apply"
+  description = "マスキングプロキシ MCP の利用者向け: 対象 Guardrail への ApplyGuardrail のみ許可"
+  policy      = data.aws_iam_policy_document.apply_guardrail.json
+}
