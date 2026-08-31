@@ -7,12 +7,18 @@ resource "aws_bedrock_guardrail" "pii_masking" {
   blocked_outputs_messaging = "機密情報が含まれているため応答できません。"
 
   sensitive_information_policy_config {
+    # action だけの指定ではマスクが出力側評価にしか適用されないため、
+    # input_action / input_enabled で入力側（source=INPUT）のマスクを明示する
     dynamic "pii_entities_config" {
       for_each = var.pii_entity_types
 
       content {
-        type   = pii_entities_config.value
-        action = "ANONYMIZE"
+        type           = pii_entities_config.value
+        action         = "ANONYMIZE"
+        input_action   = "ANONYMIZE"
+        input_enabled  = true
+        output_action  = "ANONYMIZE"
+        output_enabled = true
       }
     }
 
@@ -21,10 +27,14 @@ resource "aws_bedrock_guardrail" "pii_masking" {
       for_each = var.regex_filters
 
       content {
-        name        = regexes_config.value.name
-        description = regexes_config.value.description
-        pattern     = regexes_config.value.pattern
-        action      = "ANONYMIZE"
+        name           = regexes_config.value.name
+        description    = regexes_config.value.description
+        pattern        = regexes_config.value.pattern
+        action         = "ANONYMIZE"
+        input_action   = "ANONYMIZE"
+        input_enabled  = true
+        output_action  = "ANONYMIZE"
+        output_enabled = true
       }
     }
   }
