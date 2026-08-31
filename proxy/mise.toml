@@ -1,0 +1,13 @@
+[tools]
+node = "22.14.0"
+
+[tasks.install]
+run = "npm ci"
+
+[tasks.build]
+run = "npm run build"
+depends = ["install"]
+
+[tasks.start]
+run = "npm start"
+depends = ["build"]

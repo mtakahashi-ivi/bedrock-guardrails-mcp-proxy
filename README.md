@@ -19,7 +19,8 @@ Atlassian 公式 Remote MCP Server（Jira / Confluence）
 ## 構成
 
 - `terraform/` — Bedrock Guardrails（機微情報フィルタ + カスタム正規表現）の定義
-- `proxy/` — マスキングプロキシ MCP サーバ（TypeScript）※今後追加
+- `proxy/` — マスキングプロキシ MCP サーバ（TypeScript）
+- `apm.yml` — APM Marketplace 掲載用のパッケージ定義
 
 ## Guardrail のデプロイ
 
@@ -30,7 +31,38 @@ terraform plan
 terraform apply
 ```
 
-`guardrail_id` と `guardrail_version` が出力されるので、プロキシ MCP サーバの環境変数に設定します（プロキシ実装は今後追加）。
+`guardrail_id` と `guardrail_version` が出力されるので、プロキシ MCP サーバの環境変数に設定します。
+
+## プロキシのビルドと動作確認
+
+```shell
+cd proxy
+npm ci
+npm run build
+
+# スモークテスト（ApplyGuardrail を呼べる AWS 認証情報が必要）
+AWS_PROFILE=<profile> GUARDRAIL_ID=<id> GUARDRAIL_VERSION=<version> npm run smoke
+```
+
+## Claude Code への登録例
+
+```shell
+claude mcp add jira-confluence-masked \
+  --env GUARDRAIL_ID=<id> \
+  --env GUARDRAIL_VERSION=<version> \
+  --env AWS_PROFILE=<profile> \
+  -- node /path/to/bedrock-guardrails-mcp-proxy/proxy/dist/index.js
+```
+
+## 環境変数
+
+| 変数 | 既定値 | 説明 |
+|---|---|---|
+| `GUARDRAIL_ID` | （必須） | ApplyGuardrail に渡す Guardrail ID |
+| `GUARDRAIL_VERSION` | `DRAFT` | Guardrail のバージョン。運用では固定バージョンを推奨 |
+| `AWS_REGION` | `ap-northeast-1` | Guardrail のリージョン |
+| `UPSTREAM_MCP_URL` | Atlassian 公式 Remote MCP | 上流の Remote MCP エンドポイント（mcp-remote 経由で接続） |
+| `UPSTREAM_COMMAND` | なし | 指定すると任意の stdio MCP サーバを上流にする（テスト・別上流用） |
 
 ## License
 

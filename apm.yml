@@ -1,0 +1,20 @@
+name: guardrails-masking-proxy
+version: 1.0.0
+description: Jira/Confluence の MCP ツール結果を Bedrock Guardrails でマスクするプロキシ MCP サーバ
+targets:
+  - claude
+  - codex
+
+# GUARDRAIL_ID / GUARDRAIL_VERSION / AWS_PROFILE は利用者の環境変数で指定する
+dependencies:
+  mcp:
+    - name: guardrails_masking_proxy
+      registry: false
+      transport: stdio
+      command: mise
+      args:
+        - -C
+        - ./apm_modules/mtakahashi-ivi/bedrock-guardrails-mcp-proxy/proxy
+        - run
+        - start
+      cwd: ./apm_modules/mtakahashi-ivi/bedrock-guardrails-mcp-proxy/proxy
