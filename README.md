@@ -21,6 +21,17 @@ Atlassian 公式 Remote MCP Server（Jira / Confluence）
 - `terraform/` — Bedrock Guardrails（機微情報フィルタ + カスタム正規表現）の定義
 - `proxy/` — マスキングプロキシ MCP サーバ（TypeScript）※今後追加
 
+## Guardrail のデプロイ
+
+```shell
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+`guardrail_id` と `guardrail_version` が出力されるので、プロキシ MCP サーバの環境変数に設定します（プロキシ実装は今後追加）。
+
 ## License
 
 MIT
