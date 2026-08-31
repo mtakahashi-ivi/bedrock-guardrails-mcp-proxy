@@ -17,4 +17,3 @@ dependencies:
         - ./apm_modules/mtakahashi-ivi/bedrock-guardrails-mcp-proxy/proxy
         - run
         - start
-      cwd: ./apm_modules/mtakahashi-ivi/bedrock-guardrails-mcp-proxy/proxy
