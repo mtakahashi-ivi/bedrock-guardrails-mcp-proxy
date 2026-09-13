@@ -11,6 +11,9 @@
  *   ツール結果を素通しせずエラーを返す
  * - マスクできない非テキストコンテンツ（画像等）と structuredContent は除去する
  * - ログ（stderr）にはマスク前のテキストや検出値を出さない
+ * - 必須の環境変数が無い場合も MCP サーバとしては起動し、設定エラーを
+ *   ツールとして可視化する（起動時に exit すると MCP クライアント側には
+ *   "Connection closed" としか表示されず、原因が分からないため）
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -37,12 +40,34 @@ const UPSTREAM_COMMAND = process.env.UPSTREAM_COMMAND;
 // 分割して順に適用する（1 呼び出しあたりの上限に収める保守的なサイズ）
 const CHUNK_CHARS = 20_000;
 
-if (!GUARDRAIL_ID) {
-  console.error("[proxy] 環境変数 GUARDRAIL_ID が未設定です");
-  process.exit(1);
-}
-
 const bedrock = new BedrockRuntimeClient({ region: AWS_REGION });
+
+/**
+ * 設定不備のときに立ち上げる縮退モードのサーバ。上流には接続せず
+ * （設定が壊れた状態で OAuth フローを起動しないため）、エラー内容を
+ * 説明するツールを 1 つだけ公開する。
+ */
+async function serveConfigError(message: string): Promise<void> {
+  console.error(message);
+  const server = new Server(
+    { name: "guardrails-masking-proxy", version: "1.0.0" },
+    { capabilities: { tools: {} } },
+  );
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+      {
+        name: "proxy_setup_required",
+        description: `このプロキシは設定不備のため動作していません。${message}`,
+        inputSchema: { type: "object" as const, properties: {} },
+      },
+    ],
+  }));
+  server.setRequestHandler(CallToolRequestSchema, async () => ({
+    isError: true,
+    content: [{ type: "text" as const, text: message }],
+  }));
+  await server.connect(new StdioServerTransport());
+}
 
 async function maskText(text: string): Promise<string> {
   if (text.length === 0) return text;
@@ -95,6 +120,15 @@ async function maskToolResult(result: {
 }
 
 async function main() {
+  if (!GUARDRAIL_ID) {
+    await serveConfigError(
+      "[proxy] 環境変数 GUARDRAIL_ID が未設定です。" +
+        "MCP サーバ設定の env で GUARDRAIL_ID（必須）、GUARDRAIL_VERSION、" +
+        "AWS_PROFILE を指定してください。値は terraform output で確認できます。",
+    );
+    return;
+  }
+
   const upstreamTransport = UPSTREAM_COMMAND
     ? new StdioClientTransport({
         command: UPSTREAM_COMMAND.split(" ")[0],
